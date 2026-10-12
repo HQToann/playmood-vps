@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playmood-web
+  namespace: playmood
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: playmood-web
+  template:
+    metadata:
+      labels:
+        app: playmood-web
+    spec:
+      containers:
+        - name: web
+          image: traefik/whoami:latest
+          ports:
+            - containerPort: 80
+          envFrom:
+            - secretRef:
+                name: playmood-env
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { memory: 256Mi }
