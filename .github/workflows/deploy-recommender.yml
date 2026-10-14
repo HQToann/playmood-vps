@@ -1,0 +1,45 @@
+name: Deploy recommender
+ 
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/recommender/**"
+      - ".github/workflows/deploy-recommender.yml"
+  workflow_dispatch:
+ 
+concurrency:
+  group: deploy-recommender
+  cancel-in-progress: false
+ 
+jobs:
+  deploy:
+    runs-on: [self-hosted, vm2]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+ 
+      - name: Kiểm tra đã có code chưa
+        id: code
+        run: |
+          if [ -f services/recommender/requirements.txt ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Chưa có services/recommender/requirements.txt, bỏ qua deploy."
+          fi
+ 
+      - name: Chép code và cài thư viện
+        if: steps.code.outputs.ready == 'true'
+        run: |
+          set -e
+          rsync -a --delete --exclude '__pycache__' services/recommender/ /opt/recommender/app/
+          sudo -u recsys /opt/recommender/venv/bin/pip install -r /opt/recommender/app/requirements.txt
+ 
+      - name: Restart service
+        if: steps.code.outputs.ready == 'true'
+        run: |
+          sudo systemctl restart recommender
+          sleep 5
+          sudo systemctl is-active recommender
