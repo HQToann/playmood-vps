@@ -1,0 +1,67 @@
+name: Deploy notification
+ 
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/notification/**"
+      - "k8s/notification/**"
+      - ".github/workflows/deploy-notification.yml"
+  workflow_dispatch:
+ 
+concurrency:
+  group: deploy-notification
+  cancel-in-progress: false
+ 
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/playmood-notification
+  NS: playmood
+  DEPLOY: playmood-notification
+ 
+jobs:
+  deploy:
+    runs-on: [self-hosted, vm1]
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+ 
+      - name: Kiểm tra đã có code chưa
+        id: code
+        run: |
+          if [ -f services/notification/Dockerfile ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Chưa có services/notification/Dockerfile, bỏ qua deploy."
+          fi
+ 
+      - name: Build image
+        if: steps.code.outputs.ready == 'true'
+        run: docker build -t "$IMAGE:${{ github.sha }}" -t "$IMAGE:latest" services/notification
+ 
+      - name: Push GHCR
+        if: steps.code.outputs.ready == 'true'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE:${{ github.sha }}"
+          docker push "$IMAGE:latest"
+ 
+      - name: Deploy lên K3s
+        if: steps.code.outputs.ready == 'true'
+        run: |
+          set -e
+          kubectl apply -f k8s/notification/service.yaml
+          sed "s|image: .*|image: $IMAGE:${{ github.sha }}|" k8s/notification/deployment.yaml | kubectl apply -f -
+          if ! kubectl rollout status deployment/$DEPLOY -n $NS --timeout=300s; then
+            echo "Rollout thất bại, quay về bản trước"
+            kubectl rollout undo deployment/$DEPLOY -n $NS
+            exit 1
+          fi
+ 
+      - name: Dọn image cũ
+        if: always()
+        run: docker image prune -af --filter "until=168h"
