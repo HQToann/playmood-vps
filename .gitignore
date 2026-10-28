@@ -1,12 +1,43 @@
 @"
+# --- Python & Pipenv ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.pipenv/
+Pipfile
+Pipfile.lock
+
+# --- Environment & Secrets ---
 .env
 *.env
 !.env.example
-__pycache__/
-*.pyc
-venv/
-.venv/
-node_modules/
+
+# --- Databases ---
 db.sqlite3
+db_test.sqlite3
+*.sqlite3
+
+# --- Logs & Temp ---
 *.log
+logs/
+
+# --- VS Code & IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Node & Frontend ---
+node_modules/
+
+# --- Django Media & Static ---
+staticfiles/
+media/
 "@ | Set-Content -Encoding utf8 .gitignore

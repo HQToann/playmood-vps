@@ -1,0 +1,28 @@
+# 1. Database (Kết nối Máy 3: 192.168.1.30:5432/playmood_db)
+psycopg2-binary==2.9.9 # Driver kết nối PostgreSQL dành cho Python.
+
+# 2. Core Django HTTP/REST Server (Chạy 2 Pod trên K3s Máy 1)
+Django>=5.0,<5.2 # Framework web
+gunicorn==22.0.0 # WSGI server để chạy Django trong Production
+whitenoise==6.7.0 # Serve các file tĩnh (CSS, JS, Images) 
+python-decouple==3.8 # Đọc cấu hình từ file .env
+django-cors-headers==4.4.0 # Xử lý Cross-Origin Resource Sharing (CORS)
+
+# 3. Cloudinary — lưu trữ audio, ảnh bìa, avatar
+cloudinary==1.40.0 # API xử lý và lưu trữ file media trên Cloudinary
+django-cloudinary-storage==0.3.0 # Tích hợp Cloudinary vào Django Storage System
+
+# 4. Bảo mật & Xử lý file
+bleach==6.1.0 # Thư viện làm sạch XSS
+django-ratelimit==4.1.0 # Giới hạn số lần request/thời gian
+factory-boy==3.3.0 # Tạo dữ liệu test
+Pillow==10.4.0 # Xử lý ảnh
+mutagen==1.47.0 # Đọc metadata từ file audio
+django-anymail==11.1 # Gửi email
+resend==2.4.0 # Gửi email qua Resend API
+
+# 5. Redis Client (Kết nối Máy 3: 192.168.1.30:6379/0 cho Cache & Pub/Sub sang Pod Notification)
+redis==5.0.8 # Redis client cho Python
+
+# 6. Kafka Client (Kết nối Máy 4: 192.168.1.40:9092 cho Event Bus sang Máy 2 & Pod Notification)
+confluent-kafka==2.6.0 # Kafka client cho Python
