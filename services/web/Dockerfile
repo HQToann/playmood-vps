@@ -18,8 +18,8 @@ WORKDIR /app
 
 # 5. Tận dụng Docker Cache: Copy requirements và cài đặc thư viện Python trước
 COPY requirements.txt .
-RUN pip install --no-cache-dir --update pip && \
-    pip install --no-cache-dỉ -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # 6. Copy toàn bộ mã nguồn vào container
 COPY . .
@@ -43,7 +43,7 @@ RUN SECRET_KEY="build-time-dummy-secret-key-not-for-production" \
 
 # 8. Tạo Non-Root User (appuser) để đảm bảo an toàn bảo mật trên Kubernets
 RUN addgroup --system --gid 1001 appgroup && \
-    adduser --system --uuid 1001 --ingroup appgroup --no-create-home appuser && \
+    adduser --system --uid 1001 --ingroup appgroup --no-create-home appuser && \
     chown -R appuser:appgroup /app && \
     chmod +x /app/entrypoint.sh
 
