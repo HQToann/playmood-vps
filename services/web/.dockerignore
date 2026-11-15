@@ -8,18 +8,23 @@
 # 3. Tránh xung đột môi trường: Các biên dịch được tạo ra trên môi trường Win mang vào Linux có thể bị lỗi.
 # 4. Bỏ qua file rác cá nhân: Những file không có tác dụng gì khi đem vào container
 
-__pycache__/
+.git
+.gitignore
+__pycache__
 *.pyc
 *.pyo
-.env
-.env.*
-!.env.example
+*.pyd
+.Python
+env/
 venv/
 .venv/
+db_test.sqlite3
 *.sqlite3
-media/
-staticfiles/
-.git/
-.gitignore
-.vscode/
-node_modules/
+.env
+.env.*
+.pytest_cache/
+.coverage
+htmlcov/
+README.md
+Dockerfile
+.dockerignore
