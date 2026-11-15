@@ -1,13 +1,15 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: playmood
+  name: playmood-ingress
   namespace: playmood
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
-  ingressClassName: traefik
   rules:
     - http:
         paths:
+          # 1. Luồng WebSocket thông báo chuyển sang Pod notification
           - path: /ws
             pathType: Prefix
             backend:
@@ -15,6 +17,7 @@ spec:
                 name: playmood-notification
                 port:
                   number: 80
+          # 2. Toàn bộ Web UI, Django Admin và REST API chuyển vào Pod web
           - path: /
             pathType: Prefix
             backend:
