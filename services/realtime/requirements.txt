@@ -1,0 +1,14 @@
+# Web & WebSocket Framework
+starlette==0.36.3
+uvicorn[standard]==0.27.1
+websockets==12.0
+
+# Database & Caching
+psycopg2-binary==2.9.9
+redis==5.0.3
+
+# Kafka Event Bus
+confluent-kafka==2.3.0
+
+# Utils
+python-decouple==3.8
