@@ -16,7 +16,7 @@ for i in range(30):
         with socket.create_connection((host, port), timeout=2):
             print(f"===> [PlayMood Web] Kết nối Database ({host}:{port}) thành công !")
             break
-        except (socket.error, ConnectionRefusedError):
+    except (socket.error, ConnectionRefusedError):
             print(f"===> [PlayMood Web] Đang chờ Database ({host}:{port}) ... ({i+1}/30)")
             time.sleep(1)
 else:
