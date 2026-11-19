@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: playmood-web
   namespace: playmood
+  labels:
+    app: playmood-web
 spec:
   replicas: 2
   selector:
@@ -15,16 +17,37 @@ spec:
     spec:
       containers:
         - name: web
-          image: traefik/whoami:latest
+          image: playmood-web:latest
+          # Dùng IfNotPresent để K3s ưu tiên nạp image đã build/import trên VM1, tránh lỗi ImagePullBackOff
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 80
+            - name: http
+              containerPort: 8000
           envFrom:
             - secretRef:
                 name: playmood-env
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          # Liveness: Kiểm tra tiến trình web còn sống (không query DB để tránh quá tải)
+          livenessProbe:
+            httpGet:
+              path: /health/?type=liveness
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # Readiness: Kiểm tra kết nối thông suốt tới Postgres & Redis trên VM3 trước khi cho nhận request
           readinessProbe:
             httpGet:
-              path: /health
-              port: 80
-          resources:
-            requests: { cpu: 50m, memory: 32Mi }
-            limits: { memory: 256Mi }
+              path: /health/?type=readiness
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
