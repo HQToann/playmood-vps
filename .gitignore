@@ -41,3 +41,15 @@ node_modules/
 staticfiles/
 media/
 "@ | Set-Content -Encoding utf8 .gitignore
+
+services/recommender/data/raw/
+
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv/
+venv/
+data/raw/
+.git/
+*.md
