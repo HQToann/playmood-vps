@@ -1,8 +1,9 @@
-##!/usr/bin/env bash
+#!/bin/sh
 set -e
 
+echo "==> [PlayMood Realtime] Khởi chạy Uvicorn tại cổng ${PORT:-8001}..."
 
-echo "Khởi động máy chủ thời gian thực (Starlette)..."
-#khởi chạy Uvicorn server, trỏ đến file main.py và biến app
-
-exec uvicorn realtime_service.main:app --host 0.0.0.0 --port 8000 --workers 2
+exec uvicorn realtime_service.main:app \
+    --host 0.0.0.0 \
+    --port "${PORT:-8001}" \
+    --log-level info

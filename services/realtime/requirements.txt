@@ -1,14 +1,16 @@
-# Web & WebSocket Framework
-starlette==0.36.3
-uvicorn[standard]==0.27.1
-websockets==12.0
+# ASGI Framework & Server
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+websockets==13.1
 
-# Database & Caching
-psycopg2-binary==2.9.9
-redis==5.0.3
+# Database - asyncpg (async driver, không ORM, không block event loop)
+asyncpg==0.29.0
 
-# Kafka Event Bus
-confluent-kafka==2.3.0
+# Redis Pub/Sub - phải có [asyncio] để dùng redis.asyncio
+redis[asyncio]==5.0.8
 
-# Utils
+# Kafka Consumer (C binding, chạy trong thread pool)
+confluent-kafka==2.6.0
+
+# Đọc biến môi trường từ .env
 python-decouple==3.8

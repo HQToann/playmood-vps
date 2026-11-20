@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playmood-realtime
+  namespace: playmood
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: playmood-realtime
+  template:
+    metadata:
+      labels:
+        app: playmood-realtime
+    spec:
+      containers:
+        - name: realtime
+          image: playmood-realtime:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8001
+          envFrom:
+            - secretRef:
+                name: playmood-env
+          livenessProbe:
+            httpGet:
+              path: /health/?type=liveness
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health/
+              port: 8001
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi

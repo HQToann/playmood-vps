@@ -1,4 +1,7 @@
 import logging
+import json
+from decouple import config as _config
+import redis as _redis_sync
 
 from notifications.models import Notification
 from notifications.exceptions import NotificationNotFound
@@ -34,6 +37,25 @@ def create_notification(recipient, notif_type: str,
     )
 
     logger.info('Notification created: recipient=%s type=%s', recipient.username, notif_type)
+    
+    # Bắn sự kiện sang Redis Pub/Sub để Pod realtime đẩy xuống WebSocket người dùng
+    try:
+        redis_url = _config('REDIS_URL', default='redis://127.0.0.1:6379/0')
+        r_client = _redis_sync.from_url(redis_url, socket_timeout=1)
+        r_client.publish(
+            f"room:user_{recipient.id}",
+            json.dumps({
+                "message": "new_notification",
+                "notification": {
+                    "notif_type": notif_type,
+                    "message": message,
+                    "target_type": target_type,
+                    "target_id": str(target_id) if target_id else None,
+                }
+            })
+        )
+    except Exception as e:
+        logger.warning("[Realtime] Bỏ qua lỗi gửi Redis publish notification: %s", e)
 
     return notification
 

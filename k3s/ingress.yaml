@@ -9,12 +9,12 @@ spec:
   rules:
     - http:
         paths:
-          # 1. Luồng WebSocket thông báo chuyển sang Pod notification
+          # 1. Luồng WebSocket định tuyến vào Pod realtime
           - path: /ws
             pathType: Prefix
             backend:
               service:
-                name: playmood-notification
+                name: playmood-realtime    # <-- ĐỔI THÀNH playmood-realtime
                 port:
                   number: 80
           # 2. Toàn bộ Web UI, Django Admin và REST API chuyển vào Pod web
