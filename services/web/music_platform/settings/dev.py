@@ -1,9 +1,12 @@
 from .base import *
 
-#chế độ debug khi chạy local
+
+# Chế độ debug khi chạy local
 DEBUG = True
 
-#Cho phép mọi host
+# Cho phép mọi host
 ALLOWED_HOSTS = ['*']
 
-#kết nối database
+# Cookie không bắt buộc HTTPS ở local
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
