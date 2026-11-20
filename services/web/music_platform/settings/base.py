@@ -43,11 +43,13 @@ CORS_ALLOWED_ORIGINS = list(
     )
 )
 
-# Tự động tách nếu FRONTEND_URL có dấu phẩy và thêm vào CORS
+# Tự động tách nếu FRONTEND_URL có dấu phẩy và thêm vào CORS lẫn CSRF_TRUSTED_ORIGINS
 if FRONTEND_URL:
     for url in [u.strip() for u in FRONTEND_URL.split(',') if u.strip()]:
         if url not in CORS_ALLOWED_ORIGINS:
             CORS_ALLOWED_ORIGINS.append(url)
+        if url not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(url)
             
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_HEADERS = [
@@ -75,8 +77,8 @@ INSTALLED_APPS = [
     # Thư viện bên thứ ba
     'corsheaders',
     'anymail',
-    'cloudinary',
     'cloudinary_storage',
+    'cloudinary',
 
     # Ứng dụng nội bộ
     'accounts',
@@ -123,12 +125,21 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
+            ]
+        }
+    }
 ]
 
+# Cầu nối web server Gateway interface
 WSGI_APPLICATION = 'music_platform.wsgi.application'
+
+# Kiểm tra độ mạnh của mật khẩu
+# AUTH_PASSWORD_VALIDATORS = [
+#     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
+#     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
+#     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},
+#     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
+# ]
 
 # 6. Database
 db_name = config('DB_NAME', default=None)
@@ -179,14 +190,14 @@ LANGUAGE_CODE = 'vi'
 TIME_ZONE = 'Asia/Ho_Chi_Minh'
 USE_I18N = True
 USE_TZ = True
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # 10. File tĩnh và file media
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATIC_DIR = BASE_DIR / 'static'
-if STATIC_DIR.exists():
-    STATICFILES_DIRS = [STATIC_DIR]
+STATICFILES_DIRS = [STATIC_DIR] if STATIC_DIR.exists() else []
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
