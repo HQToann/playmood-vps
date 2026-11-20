@@ -182,9 +182,11 @@ def load_from_csv(
     return build_interaction_matrix(interactions_df, songs_df)
 
 
-def load_from_postgres() -> InteractionDataset:
+def load_from_postgres(apply_limits: bool = False) -> InteractionDataset:
     """đọc bảng tương tác lượt nghe và thông tin bài hát từ PostgreSQL (VM3).
     Dùng khi chạy worker thực tế trên VM2.
+    - apply_limits=False (mặc định): nạp toàn bộ dữ liệu để suy luận chính xác nhất.
+    - apply_limits=True: cắt gọn về MAX_USERS / MAX_SONGS (dùng khi test).
     """
     conn = None
     try:
@@ -218,6 +220,8 @@ def load_from_postgres() -> InteractionDataset:
             return build_interaction_matrix(interactions_df, songs_df)
 
         clean_df = clean_and_aggregate(interactions_df)
+        if apply_limits:
+            clean_df = filter_subset(clean_df, max_users=MAX_USERS, max_songs=MAX_SONGS)
         return build_interaction_matrix(clean_df, songs_df)
     finally:
         if conn:

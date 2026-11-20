@@ -15,6 +15,8 @@ from .config import (
     KAFKA_TOPIC_USER_EVENTS,
     TOP_K,
 )
+# alias để dùng trong class
+KAFKA_GROUP_ID = KAFKA_RECSYS_GROUP_ID
 from .cosine_cf import CosineCFRecommender
 from .data_prep import (
     InteractionDataset,
@@ -47,7 +49,7 @@ class RecommenderWorker:
         self.consumer = Consumer(
             {
                 "bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS,
-                "group.id": KAFKA_RECSYS_GROUP_ID,
+                "group.id": KAFKA_GROUP_ID,
                 "auto.offset.reset": "earliest",
                 "enable.auto.commit": False,
             }
