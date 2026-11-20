@@ -205,10 +205,11 @@ def load_from_postgres(apply_limits: bool = False) -> InteractionDataset:
 
             cur.execute(
                 """
-                SELECT id::text AS song_id,
-                       title,
-                       artist
-                FROM music_song
+                SELECT s.id::text AS song_id,
+                       s.title,
+                       COALESCE(u.username, 'Unknown Artist') AS artist
+                FROM music_song s
+                LEFT JOIN accounts_user u ON s.artist_id = u.id
                 """
             )
             song_rows = cur.fetchall()
