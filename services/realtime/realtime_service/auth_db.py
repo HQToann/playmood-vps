@@ -1,16 +1,18 @@
+# realtime_service/auth_db.py
 import asyncpg
 import base64
 import json
 import logging
-
+import zlib
 from . import config
 
 logger = logging.getLogger(__name__)
 
+
 async def get_db_pool() -> asyncpg.Pool:
     """
-    Tạo Connection Pool kết nối PostgreSQL (Asyncpg)
-    Hàm này được gọi 1 lần duy nhất trong lifespan startup của FastAPI
+    Tạo Connection Pool kết nối PostgreSQL (Asyncpg).
+    Hàm này được gọi 1 lần duy nhất trong lifespan startup của FastAPI.
     """
     logger.info("Đang khởi tạo connection pool PostgreSQL (%s:%d)...", config.DB_HOST, config.DB_PORT)
     return await asyncpg.create_pool(
@@ -23,37 +25,52 @@ async def get_db_pool() -> asyncpg.Pool:
         max_size=10,
     )
 
+
 def decode_django_session(session_data: str) -> dict | None:
     """
-    Giải mã session_data chuẩn của Django 4.1+
-    Định dạng lưu trong DB: '<hash>:<base64_encoded_json>'
+    Giải mã session_data chuẩn của Django (bao gồm cả uncompressed lẫn compressed zlib).
+    Cấu trúc: '<payload_base64>:<timestamp>:<signature>'
     """
     try:
-        if not session_data or ':' not in session_data:
+        if not session_data:
             return None
-        
-        # bỏ qua phần chữ ký băm (hash), chỉ lấy phần base64 phía sau
-        encoded_payload = session_data.split(':', 1)[1]
-        decoded_json = base64.b64decode(encoded_payload).decode('utf-8')
-        return json.loads(decoded_json)
+
+        # 1. Dữ liệu thực sự nằm ở TRƯỚC dấu ':' đầu tiên
+        raw_payload = session_data.split(':', 1)[0]
+
+        # 2. Kiểm tra xem Django có nén zlib không (bắt đầu bằng dấu '.')
+        is_compressed = raw_payload.startswith('.')
+        if is_compressed:
+            raw_payload = raw_payload[1:]
+
+        # 3. Bổ sung padding URL-safe base64 và giải mã
+        pad = '=' * (-len(raw_payload) % 4)
+        decoded_bytes = base64.urlsafe_b64decode(raw_payload + pad)
+
+        # 4. Giải nén zlib nếu cần
+        if is_compressed:
+            decoded_bytes = zlib.decompress(decoded_bytes)
+
+        return json.loads(decoded_bytes.decode('utf-8'))
     except Exception as e:
         logger.warning("[Auth] Giải mã session_data thất bại: %s", e)
         return None
 
+
 async def get_user_from_session(pool: asyncpg.Pool, session_id: str) -> dict | None:
     """
-    Xác thực session_id từ cookie của Django và trả về thông tin user
-    Trả về dict user hoặc None nếu session không hợp lệ/hết hạn
+    Xác thực session_id từ cookie của Django và trả về thông tin user.
+    Trả về dict user hoặc None nếu session không hợp lệ/hết hạn.
     """
     if not session_id or not pool:
         return None
 
-    try: 
+    try:
         async with pool.acquire() as conn:
             # 1. Tìm phiên đăng nhập còn hạn trong bảng django_session
             query_session = """
-                SELECT session_data
-                FROM django_session
+                SELECT session_data 
+                FROM django_session 
                 WHERE session_key = $1 AND expire_date > NOW()
             """
             session_row = await conn.fetchrow(query_session, session_id)
@@ -68,11 +85,11 @@ async def get_user_from_session(pool: asyncpg.Pool, session_id: str) -> dict | N
             user_id = session_dict.get('_auth_user_id')
             if not user_id:
                 return None
-            
-            # 3. Lấy thông tin người dùng từ bảng accounts_user (Khoá chính là UUID)
+
+            # 3. Lấy thông tin người dùng từ bảng accounts_user (Khóa chính là UUID)
             query_user = """
                 SELECT id::text, username, email, role, is_active
-                FROM accounts_user
+                FROM accounts_user 
                 WHERE id = $1::uuid AND is_active = TRUE
             """
             user_row = await conn.fetchrow(query_user, str(user_id))
