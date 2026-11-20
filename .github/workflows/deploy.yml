@@ -1,0 +1,87 @@
+name: PlayMood CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - HuynhToan
+      - main
+  workflow_dispatch: # Cho phép bấm chạy thủ công trên GitHub UI
+
+concurrency:
+  group: playmood-deploy
+  cancel-in-progress: false
+
+env:
+  NS: playmood
+
+jobs:
+  deploy-cluster:
+    name: Build & Deploy lên K3s Cluster
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 20
+
+    steps:
+      - name: 1. Checkout mã nguồn mới nhất
+        uses: actions/checkout@v4
+
+      # PLAYMOOD WEB
+      - name: 2. Build Docker Image Web
+        run: |
+          echo "==> Đang build image playmood-web:latest..."
+          docker build -t playmood-web:latest services/web/
+
+      - name: 3. Import Image Web vào K3s containerd
+        run: |
+          echo "==> Đang import playmood-web vào K3s containerd..."
+          docker save playmood-web:latest | sudo k3s ctr images import -
+
+      - name: 4. Cập nhật Manifest & Restart Pod Web
+        run: |
+          echo "==> Apply manifest K3s Web..."
+          kubectl apply -f k3s/web/service.yaml
+          kubectl apply -f k3s/web/deployment.yaml
+          echo "==> Restart deployment playmood-web..."
+          kubectl rollout restart deployment playmood-web -n $NS
+          kubectl rollout status deployment playmood-web -n $NS --timeout=120s
+
+      - name: 5. Chạy Database Migrations (Django)
+        run: |
+          echo "==> Chạy migrate database..."
+          kubectl exec -n $NS deployment/playmood-web -- python manage.py migrate --noinput || true
+
+      # PLAYMOOD REALTIME 
+      - name: 6. Build Docker Image Realtime
+        run: |
+          echo "==> Đang build image playmood-realtime:latest..."
+          docker build -t playmood-realtime:latest services/realtime/
+
+      - name: 7. Import Image Realtime vào K3s containerd
+        run: |
+          echo "==> Đang import playmood-realtime vào K3s containerd..."
+          docker save playmood-realtime:latest | sudo k3s ctr images import -
+
+      - name: 8. Cập nhật Manifest & Restart Pod Realtime
+        run: |
+          echo "==> Apply manifest K3s Realtime..."
+          kubectl apply -f k3s/realtime/service.yaml
+          kubectl apply -f k3s/realtime/deployment.yaml
+          echo "==> Restart deployment playmood-realtime..."
+          kubectl rollout restart deployment playmood-realtime -n $NS
+          kubectl rollout status deployment playmood-realtime -n $NS --timeout=120s
+
+      # INGRESS & VERIFICATION
+      - name: 9. Cập nhật Ingress Rules
+        run: |
+          kubectl apply -f k3s/ingress.yaml
+
+      - name: 10. Dọn dẹp Docker Images thừa
+        if: always()
+        run: |
+          docker image prune -f
+
+      - name: 11. Kiểm tra trạng thái toàn bộ Pods
+        run: |
+          echo "==================== TRẠNG THÁI PODS ===================="
+          kubectl get pods -n $NS -o wide
+          echo "==================== TRẠNG THÁI SERVICES ===================="
+          kubectl get svc -n $NS
